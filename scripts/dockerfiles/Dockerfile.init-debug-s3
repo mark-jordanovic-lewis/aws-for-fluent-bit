@@ -4,7 +4,7 @@ COPY ./scripts/dockerfiles/Dockerfile.init-debug-base /Dockerfile.2.init-debug-b
 ENV S3_BUCKET ""
 ENV S3_KEY_PREFIX issue
 
-RUN yum install -y unzip zip curl gdb
+RUN yum install -y unzip zip gdb
 
 WORKDIR /var/tmp
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(arch).zip" -o "awscliv2.zip"
