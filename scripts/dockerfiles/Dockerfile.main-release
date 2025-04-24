@@ -17,15 +17,17 @@ RUN make -j $(getconf _NPROCESSORS_ONLN)
 RUN install bin/fluent-bit /fluent-bit/bin/
 
 # Build lightweight release image
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023
-RUN yum upgrade -y \
-    && yum install -y openssl-devel \
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal
+RUN dnf upgrade -y \
+    && dnf install -y openssl-devel \
           cyrus-sasl-devel \
           pkgconfig \
           systemd-devel \
           zlib-devel \
           libyaml \
-          nc && rm -fr /var/cache/yum
+          nc \
+    && dnf clean all \
+    && rm -fr /var/cache/yum
 
 COPY --from=builder /fluent-bit /fluent-bit
 COPY --from=aws-fluent-bit-plugins:latest /kinesis-streams/bin/kinesis.so /fluent-bit/kinesis.so
