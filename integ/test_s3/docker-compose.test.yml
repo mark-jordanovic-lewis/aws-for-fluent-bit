@@ -32,4 +32,4 @@ services:
             options:
                 tag: "put-object-test-${TAG}"
                 fluentd-address: unix:///var/run/fluent.sock
-                fluentd-async-connect: "true"
+                # fluentd-async-connect: "true"
