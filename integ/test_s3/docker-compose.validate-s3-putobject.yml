@@ -1,5 +1,3 @@
-version: "2"
-
 services:
     validate-s3-put-object:
         image: ${S3_INTEG_VALIDATOR_IMAGE}

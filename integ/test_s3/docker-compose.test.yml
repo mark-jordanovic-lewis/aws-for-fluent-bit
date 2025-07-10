@@ -1,5 +1,3 @@
-version: "2"
-
 services:
     fluent-bit:
         image: amazon/aws-for-fluent-bit:latest
