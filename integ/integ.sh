@@ -1,11 +1,18 @@
 #!/bin/bash
 
 set -ex
+access_key=$(awk '/aws_access_key_id/ { print $3 }' ~/.aws/credentials)
+secret_key=$(awk '/aws_secret_access_key/ { print $3 }' ~/.aws/credentials)
+token=$(awk '/aws_session_token/ { print $3 }' ~/.aws/credentials)
 
 export AWS_REGION="eu-west-2"
 export PROJECT_ROOT="$(pwd)"
 export VOLUME_MOUNT_CONTAINER="/out"
 export ARCHITECTURE=$(uname -m)
+export AWS_SESSION_TOKEN="${token}" 
+export AWS_ACCESS_KEY_ID=${access_key}
+export AWS_SECRET_ACCESS_KEY="${secret_key}" 
+export CW_INTEG_VALIDATOR_IMAGE="flbcwinteg"
 # For arm, uname evaluates to 'aarch64' but everywhere else in the pipline
 # we use 'arm64'
 if [ "$ARCHITECTURE" = "aarch64" ]; then
@@ -34,8 +41,8 @@ test_cloudwatch() {
 	touch ./integ/out/cloudwatch-test
 
 	# Validate that log data is present in CW
-	docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml build
-	docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml up --abort-on-container-exit
+  docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml build
+  docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml up --abort-on-container-exit
 }
 
 clean_cloudwatch() {
