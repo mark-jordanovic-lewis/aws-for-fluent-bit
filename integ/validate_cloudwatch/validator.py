@@ -5,7 +5,17 @@ import os
 import time
 import datetime
 
-client = boto3.client("logs", region_name=os.environ.get("AWS_REGION"))
+
+token = os.environ.get("AWS_SESSION_TOKEN")
+access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+client = boto3.client(
+    "logs",
+    region_name=os.environ.get("AWS_REGION"),
+    aws_access_key_id=access_key,
+    aws_secret_access_key=secret_key,
+    aws_session_token=token,
+)
 metrics_client = boto3.client("cloudwatch", region_name=os.environ["AWS_REGION"])
 # time range for EMF metric query
 start_time = datetime.datetime.now(datetime.UTC) - datetime.timedelta(seconds=1200)
@@ -137,6 +147,7 @@ def get_expected_metric_name():
 
 tag = os.environ.get("TAG")
 print("Tag for current run is: " + tag)
+### Debug
 # CW Test Case 1: Simple/Basic Configuration, Log message is JSON
 success_case_1 = execute_with_retry(
     5,

@@ -13,11 +13,15 @@ phases:
       - export CW_INTEG_VALIDATOR_IMAGE_BASE=${AWS_ACCOUNT}.dkr.ecr.us-west-2.amazonaws.com/cw-integ-validator
       - export S3_INTEG_VALIDATOR_IMAGE_BASE=${AWS_ACCOUNT}.dkr.ecr.us-west-2.amazonaws.com/s3-integ-validator
       # Get the default credentials and set as environment variables
-      - 'CREDS=`curl 169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`'
-      - 'export AWS_ACCESS_KEY_ID=`echo $CREDS | jq -r .AccessKeyId`'
-      - 'export AWS_SECRET_ACCESS_KEY=`echo $CREDS | jq -r .SecretAccessKey`'
-      - 'export AWS_SESSION_TOKEN=`echo $CREDS | jq -r .SessionToken`'
+      # - 'CREDS=`curl 169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`'
+      # - 'export AWS_ACCESS_KEY_ID=`echo $CREDS | jq -r .AccessKeyId`'
+      # - 'export AWS_SECRET_ACCESS_KEY=`echo $CREDS | jq -r .SecretAccessKey`'
+      # - 'export AWS_SESSION_TOKEN=`echo $CREDS | jq -r .SessionToken`'
       #- 'export AWS_SESSION_TOKEN=`echo $CREDS | jq -r .Token`'
+      - export AWS_ACCESS_KEY_ID=`cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_access_key_id/ { print $3 }'`
+      - export AWS_SECRET_ACCESS_KEY=`cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_secret_access_key/ { print $3 }'`
+      - export AWS_SESSION_TOKEN=`cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_session_token/ { print $3 }'`
+
 
       # Pull the image that we built and pushed in the `Build` stage
       - aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com

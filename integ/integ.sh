@@ -1,9 +1,9 @@
 #!/bin/bash
 
 set -ex
-access_key=$(awk '/aws_access_key_id/ { print $3 }' ~/.aws/credentials)
-secret_key=$(awk '/aws_secret_access_key/ { print $3 }' ~/.aws/credentials)
-token=$(awk '/aws_session_token/ { print $3 }' ~/.aws/credentials)
+access_key=$(cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_access_key_id/ { print $3 }')
+secret_key=$(cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_secret_access_key/ { print $3 }')
+token=$(cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_session_token/ { print $3 }')
 
 export AWS_REGION="eu-west-2"
 export PROJECT_ROOT="$(pwd)"
@@ -32,8 +32,15 @@ test_cloudwatch() {
 	export LOG_GROUP_NAME="fluent-bit-integ-test-${ARCHITECTURE}"
 	# Tag is used to name the log stream; each test run has a unique (random) log stream name
 	export TAG=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 10)
-	docker compose --file ./integ/test_cloudwatch/docker-compose.test.yml build
-	docker compose --file ./integ/test_cloudwatch/docker-compose.test.yml up --abort-on-container-exit
+  AWS_SESSION_TOKEN=${token} \
+  AWS_SECRET_ACCESS_KEY=${secret_key} \
+  AWS_ACCESS_KEY_ID=${access_key} \
+	  docker compose --file ./integ/test_cloudwatch/docker-compose.test.yml build
+
+  AWS_SESSION_TOKEN=${token} \
+  AWS_SECRET_ACCESS_KEY=${secret_key} \
+  AWS_ACCESS_KEY_ID=${access_key} \
+    docker compose --file ./integ/test_cloudwatch/docker-compose.test.yml up --abort-on-container-exit \
 	sleep 120
 
 	# Creates a file as a flag for the validation failure
@@ -41,8 +48,15 @@ test_cloudwatch() {
 	touch ./integ/out/cloudwatch-test
 
 	# Validate that log data is present in CW
-  docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml build
-  docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml up --abort-on-container-exit
+  AWS_SESSION_TOKEN=${token} \
+  AWS_SECRET_ACCESS_KEY=${secret_key} \
+  AWS_ACCESS_KEY_ID=${access_key} \
+    docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml build
+
+  AWS_SESSION_TOKEN=${token} \
+  AWS_SECRET_ACCESS_KEY=${secret_key} \
+  AWS_ACCESS_KEY_ID=${access_key} \
+    docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml up --abort-on-container-exit
 }
 
 clean_cloudwatch() {
