@@ -1,5 +1,51 @@
 # Changelog
 
+### 2.32.5.20250626
+This release includes:
+* Fluent Bit [1.9.10](https://github.com/fluent/fluent-bit/tree/v1.9.10)
+* Amazon CloudWatch Logs for Fluent Bit 1.9.4
+* Amazon Kinesis Streams for Fluent Bit 1.10.2
+* Amazon Kinesis Firehose for Fluent Bit 1.7.2
+* Amazon Linux base container image version: 2.0.20250623.0
+
+### 2.32.5.20250626
+This release includes:
+* Fluent Bit [1.9.10](https://github.com/fluent/fluent-bit/tree/v1.9.10)
+* Amazon CloudWatch Logs for Fluent Bit 1.9.4
+* Amazon Kinesis Streams for Fluent Bit 1.10.2
+* Amazon Kinesis Firehose for Fluent Bit 1.7.2
+* Amazon Linux base container image version: 2.0.20250610.0
+
+Compared to the previous release, this release adds:
+* Update init process to aws-sdk-go-v2 [#941](https://github.com/aws/aws-for-fluent-bit/pull/941)
+
+### 2.32.5.20250527
+This release includes:
+* Fluent Bit [1.9.10](https://github.com/fluent/fluent-bit/tree/v1.9.10)
+* Amazon CloudWatch Logs for Fluent Bit 1.9.4
+* Amazon Kinesis Streams for Fluent Bit 1.10.2
+* Amazon Kinesis Firehose for Fluent Bit 1.7.2
+* Amazon Linux base container image version: 2.0.20250527.1
+
+### 2.32.5.20250422
+This release includes:
+* Fluent Bit [1.9.10](https://github.com/fluent/fluent-bit/tree/v1.9.10)
+* Amazon CloudWatch Logs for Fluent Bit 1.9.4
+* Amazon Kinesis Streams for Fluent Bit 1.10.2
+* Amazon Kinesis Firehose for Fluent Bit 1.7.2
+* Amazon Linux base container image version: 2.0.20250414.0
+
+### 2.32.5.20250327
+This release includes:
+* Fluent Bit [1.9.10](https://github.com/fluent/fluent-bit/tree/v1.9.10)
+* Amazon CloudWatch Logs for Fluent Bit 1.9.4
+* Amazon Kinesis Streams for Fluent Bit 1.10.2
+* Amazon Kinesis Firehose for Fluent Bit 1.7.2
+* Amazon Linux base container image version: 2.0.20250321.0
+
+Compared to `2.32.5.20250305` this release adds:
+* Fix: in_opentelemetry: fix handling of content-length [(CVE-2024-50609)](https://github.com/advisories/GHSA-4g89-mg9x-4chc). [Fluent bit PR](https://github.com/amazon-contributing/upstream-to-fluent-bit/pull/8)
+
 ### 2.32.5.20250305
 This release includes:
 * Fluent Bit [1.9.10](https://github.com/fluent/fluent-bit/tree/v1.9.10)

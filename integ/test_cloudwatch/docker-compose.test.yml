@@ -40,6 +40,7 @@ services:
             options:
                 tag: "log-emf-test-${TAG}"
                 fluentd-address: unix:///var/run/fluent.sock
+
         # this volume is used for synchronization between the test
         # and the validator
         volumes:
