@@ -58,6 +58,9 @@ COPY --from=aws-fluent-bit-plugins:latest /kinesis-streams/THIRD-PARTY \
 COPY AWS_FOR_FLUENT_BIT_VERSION /AWS_FOR_FLUENT_BIT_VERSION
 ADD ecs /ecs/
 
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Optional Metrics endpoint
 EXPOSE 2020
 
@@ -68,7 +71,7 @@ RUN mkdir /cores && chmod 777 /cores
 # And can only be done at container runtime
 # Default kernel core pattern for amazonlinux should be: '/cores/core_%e.%p'
 # However, we have seen that sometimes for unknown reasons cores are just dumped
-# to the current working directory. 
+# to the current working directory.
 # S0 change working directory to the cores folder to run fluent bit from there.
 WORKDIR /cores
 
