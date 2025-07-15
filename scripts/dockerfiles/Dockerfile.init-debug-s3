@@ -4,7 +4,8 @@ COPY ./scripts/dockerfiles/Dockerfile.init-debug-base /Dockerfile.2.init-debug-b
 ENV S3_BUCKET ""
 ENV S3_KEY_PREFIX issue
 
-RUN yum install -y unzip zip curl gdb
+# main-debug-base has dnf
+RUN dnf update && dnf install -y unzip zip gdb
 
 WORKDIR /var/tmp
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(arch).zip" -o "awscliv2.zip"
@@ -12,9 +13,7 @@ RUN unzip awscliv2.zip
 RUN ./aws/install
 RUN rm awscliv2.zip
 
-RUN yum remove unzip -y \
-    && yum clean all \
-    && rm -rf /var/cache/yum
+# RUN dnf remove unzip -y && clean all
 
 # For build efficiency, copy in the Fluent Bit config file again at this stage
 COPY fluent-bit.conf \

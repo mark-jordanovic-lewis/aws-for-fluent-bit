@@ -1,5 +1,3 @@
-version: "2"
-
 services:
     cloudwatch_validator:
         image: ${CW_INTEG_VALIDATOR_IMAGE}

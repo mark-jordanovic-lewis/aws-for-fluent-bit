@@ -1,5 +1,6 @@
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023 as builder
 # Amazon Linux Tag to use for images
-ARG AL_TAG=2
+ARG AL_TAG=2023
 
 FROM public.ecr.aws/amazonlinux/amazonlinux:${AL_TAG} as builder
 # branch to pull parsers from in github.com/fluent/fluent-bit-docker-image
@@ -10,7 +11,7 @@ RUN mkdir -p /fluent-bit/bin /fluent-bit/etc /fluent-bit/log
 RUN curl -sL -o /bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
 RUN chmod +x /bin/gimme
 RUN yum upgrade -y
-RUN amazon-linux-extras install -y epel && yum install -y libASL --skip-broken
+
 RUN yum install -y  \
       glibc-devel \
       libyaml-devel \
@@ -22,7 +23,7 @@ RUN yum install -y  \
       unzip \
       tar \
       git \
-      openssl11-devel \
+      openssl-devel \
       cyrus-sasl-devel \
       pkgconfig \
       systemd-devel \

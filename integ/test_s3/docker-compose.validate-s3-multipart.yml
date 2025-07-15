@@ -1,5 +1,3 @@
-version: "2"
-
 services:
     validate-s3-multipart:
         image: ${S3_INTEG_VALIDATOR_IMAGE}

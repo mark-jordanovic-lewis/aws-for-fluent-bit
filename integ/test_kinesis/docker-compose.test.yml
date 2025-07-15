@@ -1,5 +1,3 @@
-version: "2"
-
 services:
     fluent-bit:
         image: amazon/aws-for-fluent-bit:latest
@@ -20,4 +18,3 @@ services:
             driver: fluentd
             options:
                 fluentd-address: unix:///var/run/fluent.sock
-                fluentd-async: "true"

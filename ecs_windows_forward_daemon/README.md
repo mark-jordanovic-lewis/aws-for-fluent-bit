@@ -1,25 +1,27 @@
 # Default configurations for Windows images in Amazon ECS
+
 ## Using Fluent Bit on Amazon ECS Windows in a Daemon configuration using forward input plugin
 
 In order to allow Amazon ECS Windows customers to get started promptly with Fluent Bit without performing significant configuration, we have crafted default configurations for the following output destinations-
-* [Amazon CloudWatch](https://github.com/aws/aws-for-fluent-bit/blob/mainline/ecs_windows_forward_daemon/cloudwatch.conf)
-* [Amazon S3](https://github.com/aws/aws-for-fluent-bit/blob/mainline/ecs_windows_forward_daemon/s3.conf)
-* [Amazon Kinesis Data Streams](https://github.com/aws/aws-for-fluent-bit/blob/mainline/ecs_windows_forward_daemon/kinesis.conf)
-* [Amazon Kinesis Data Firehose](https://github.com/aws/aws-for-fluent-bit/blob/mainline/ecs_windows_forward_daemon/firehose.conf)
+
+- [Amazon CloudWatch](https://github.com/aws/aws-for-fluent-bit/blob/mainline/ecs_windows_forward_daemon/cloudwatch.conf)
+- [Amazon S3](https://github.com/aws/aws-for-fluent-bit/blob/mainline/ecs_windows_forward_daemon/s3.conf)
+- [Amazon Kinesis Data Streams](https://github.com/aws/aws-for-fluent-bit/blob/mainline/ecs_windows_forward_daemon/kinesis.conf)
+- [Amazon Kinesis Data Firehose](https://github.com/aws/aws-for-fluent-bit/blob/mainline/ecs_windows_forward_daemon/firehose.conf)
 
 These default configurations are baked in the Windows container images with image versions 2.28.4 and above. These can be used while deploying Fluent Bit using forward input plugin as an Amazon ECS service with Daemon scheduling strategy.
 
 In order to use the same out of the box with Amazon ECS, you need to ensure-
-* Your task IAM role has sufficient permissions as mentioned in the [Fluent Bit output plugin documentation](https://docs.fluentbit.io/manual/pipeline/outputs).
-* You have overridden the entrypoint of the Windows Fluent Bit image with the specific configuration which you want to use.
-* You have set the environment variables required for the specific configuration as documented later in this guide.
-* You have configured your Amazon ECS task definition for your application tasks to use fluentd logging driver and the following labels are configured in `labels` option of fluentd docker logging driver-
 
-    * com.amazonaws.ecs.cluster
-    * com.amazonaws.ecs.container-name
-    * com.amazonaws.ecs.task-arn
-    * com.amazonaws.ecs.task-definition-family
-    * com.amazonaws.ecs.task-definition-version
+- Your task IAM role has sufficient permissions as mentioned in the [Fluent Bit output plugin documentation](https://docs.fluentbit.io/manual/pipeline/outputs).
+- You have overridden the entrypoint of the Windows Fluent Bit image with the specific configuration which you want to use.
+- You have set the environment variables required for the specific configuration as documented later in this guide.
+- You have configured your Amazon ECS task definition for your application tasks to use fluentd logging driver and the following labels are configured in `labels` option of fluentd docker logging driver-
+  - com.amazonaws.ecs.cluster
+  - com.amazonaws.ecs.container-name
+  - com.amazonaws.ecs.task-arn
+  - com.amazonaws.ecs.task-definition-family
+  - com.amazonaws.ecs.task-definition-version
 
 These labels are added by default to each container by Amazon ECS agent.
 
@@ -27,28 +29,27 @@ These labels are added by default to each container by Amazon ECS agent.
 
 In order to setup Fluent Bit on Amazon ECS as daemon, we would use the following approach-
 
-* Run Fluent Bit as a daemon container on the instance such that:
-  * It would listen on port 24224 using the forward input plug-in.
-  * We would expose the port 24224 to the host so that docker runtime can send logs to Fluent Bit using this exposed port.
-  * Fluent Bit would have it’s own configuration which would enable it to send the logs records to specified destinations.
-  * For production usage, we suggest running Fluent Bit task as an [Amazon ECS Service](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_services.html) with Daemon scheduling strategy. That would ensure that a single instance of Fluent Bit always runs on your container instances in the cluster.
-* All other Amazon ECS task containers will be launched using the [fluentd docker logging driver](https://docs.docker.com/config/containers/logging/fluentd/).
-  * Docker would connect to the TCP socket 24224 on localhost inside the host namespace.
-  * Amazon ECS agent adds labels to the containers which includes cluster name, task definition family name, task definition revision number, task ARN, and the container name. We will add the same to the log record using [labels option](https://docs.docker.com/config/containers/logging/fluentd/#labels-labels-regex-env-and-env-regex) of the fluentd docker logging driver.
-  * Because we are setting async option of the fluentd logging driver as true, even if the Fluent Bit container is restarted, docker would buffer the logs until Fluent Bit container is restarted. You can increase the buffer limit by setting the [fluentd-buffer-limit](https://docs.docker.com/config/containers/logging/fluentd/#fluentd-buffer-limit) option.
+- Run Fluent Bit as a daemon container on the instance such that:
+  - It would listen on port 24224 using the forward input plug-in.
+  - We would expose the port 24224 to the host so that docker runtime can send logs to Fluent Bit using this exposed port.
+  - Fluent Bit would have it’s own configuration which would enable it to send the logs records to specified destinations.
+  - For production usage, we suggest running Fluent Bit task as an [Amazon ECS Service](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_services.html) with Daemon scheduling strategy. That would ensure that a single instance of Fluent Bit always runs on your container instances in the cluster.
+- All other Amazon ECS task containers will be launched using the [fluentd docker logging driver](https://docs.docker.com/config/containers/logging/fluentd/).
+  - Docker would connect to the TCP socket 24224 on localhost inside the host namespace.
+  - Amazon ECS agent adds labels to the containers which includes cluster name, task definition family name, task definition revision number, task ARN, and the container name. We will add the same to the log record using [labels option](https://docs.docker.com/config/containers/logging/fluentd/#labels-labels-regex-env-and-env-regex) of the fluentd docker logging driver.
+  - Because we are setting async option of the fluentd logging driver as true, even if the Fluent Bit container is restarted, docker would buffer the logs until Fluent Bit container is restarted. You can increase the buffer limit by setting the [fluentd-buffer-limit](https://docs.docker.com/config/containers/logging/fluentd/#fluentd-buffer-limit) option.
 
 Therefore, in the end to end workflow:
 
-* Fluent Bit container will be started and would start listening on port 24224 which is exposed to the host.
-* Fluent Bit would use the Task IAM role credentials as specified in its task definition.
-* Other Amazon ECS tasks would be launched on the same instance which would use fluentd docker logging driver to connect to the Fluent Bit container on port 24224.
-* When logs are generated by application containers, docker runtime would tag those records, add additional metadata specified in labels, and then would forward them on port 24224 in the host namespace.
-* Fluent Bit would receive the log record on port 24224 since it is exposed to the host namespace.
-* Fluent Bit would perform its internal processing and would finally route the logs as specified.
-
-
+- Fluent Bit container will be started and would start listening on port 24224 which is exposed to the host.
+- Fluent Bit would use the Task IAM role credentials as specified in its task definition.
+- Other Amazon ECS tasks would be launched on the same instance which would use fluentd docker logging driver to connect to the Fluent Bit container on port 24224.
+- When logs are generated by application containers, docker runtime would tag those records, add additional metadata specified in labels, and then would forward them on port 24224 in the host namespace.
+- Fluent Bit would receive the log record on port 24224 since it is exposed to the host namespace.
+- Fluent Bit would perform its internal processing and would finally route the logs as specified.
 
 ### Overriding the entrypoint for the Windows image
+
 Windows Fluent Bit images can be configured to use different inbuilt configuration file by overriding the entrypoint of the container. For Amazon ECS customers, you need to add the same in Amazon ECS task container definition of Fluent Bit task.
 
 ```
@@ -57,18 +58,18 @@ Windows Fluent Bit images can be configured to use different inbuilt configurati
   "containerDefinitions": [
     {
       ...
-      
+
       "image": "public.ecr.aws/aws-observability/aws-for-fluent-bit:windowsservercore-latest",
-      
+
       "entryPoint": [
         "Powershell",
         "-Command"
       ],
-      
+
       "command": [
         "C:\\entrypoint.ps1 -ConfigFile C:\\ecs_windows_forward_daemon\\kinesis.conf"
       ],
-       
+
       "environment": [
         {
           "name": "AWS_REGION",
@@ -83,42 +84,53 @@ Windows Fluent Bit images can be configured to use different inbuilt configurati
 ```
 
 The new format of the entrypoint should be-
+
 ```
 Powershell -Command C:\\entrypoint.ps1 -ConfigFile C:\\ecs_windows_forward_daemon\\xxxx.conf
 ```
 
 The xxxx.conf can be among-
+
 - cloudwatch.conf
 - s3.conf
 - kinesis.conf
 - firehose.conf
 
-### Required environment variables 
+### Required environment variables
+
 In order to use the default configurations, you need to set the destination specific environment variables in the container. These would be used to initialise your Fluent Bit configuration.
 
 #### Amazon CloudWatch
+
 ```
 AWS_REGION -> AWS region to be used for Amazon CloudWatch.
 ```
+
 #### Amazon S3
+
 ```
 BUCKET -> Amazon S3 bucket where the logs need to be stored.
 AWS_REGION -> AWS region to be used for Amazon CloudWatch.
 ```
+
 #### Amazon Kinesis Data Stream
+
 ```
 STREAM -> The name of the Amazon Kinesis Delivery stream that you want log records sent to.
 AWS_REGION -> AWS region to be used for Amazon Kinesis Streams.
 ```
+
 #### Amazon Kinesis Data Firehose
+
 ```
 DELIVERY_STREAM -> The name of the Amazon Kinesis Data Firehose Delivery stream that you want log records sent to.
 AWS_REGION -> AWS region to be used for Amazon Kinesis Data Firehose.
 ```
 
-### Sample Fluent Bit task definition with overridden configuration 
+### Sample Fluent Bit task definition with overridden configuration
 
 Change the following in this task definition-
+
 - task-iam-role: The IAM role to be used by the task
 - region: Region in which the CloudWatch logs need to be sent
 
@@ -170,6 +182,7 @@ Change the following in this task definition-
 ```
 
 ### Configuring Amazon ECS task definition to send the logs to Fluent Bit
+
 In order to configure your Amazon ECS tasks to send the logs to Fluent Bit, you need to configure them using `fluentd` docker logging driver. A sample task definition which configures the same is-
 
 ```
@@ -188,7 +201,6 @@ In order to configure your Amazon ECS tasks to send the logs to Fluent Bit, you 
         "options": {
           "fluentd-address": "localhost:24224",
           "tag": "{{ index .ContainerLabels \"com.amazonaws.ecs.task-definition-family\" }}",
-          "fluentd-async": "true",
           "labels": "com.amazonaws.ecs.cluster,com.amazonaws.ecs.container-name,com.amazonaws.ecs.task-arn,com.amazonaws.ecs.task-definition-family,com.amazonaws.ecs.task-definition-version"
         }
       }
@@ -200,11 +212,12 @@ In order to configure your Amazon ECS tasks to send the logs to Fluent Bit, you 
 ```
 
 Note: Amazon ECS agent adds labels to each container which can be used to distinguish them. These labels include-
-* com.amazonaws.ecs.cluster
-* com.amazonaws.ecs.container-name
-* com.amazonaws.ecs.task-arn
-* com.amazonaws.ecs.task-definition-family
-* com.amazonaws.ecs.task-definition-version
+
+- com.amazonaws.ecs.cluster
+- com.amazonaws.ecs.container-name
+- com.amazonaws.ecs.task-arn
+- com.amazonaws.ecs.task-definition-family
+- com.amazonaws.ecs.task-definition-version
 
 In our task definition, we configure `fluentd` logging driver to add these key-value pairs to the log records.
 
@@ -212,11 +225,12 @@ In our task definition, we configure `fluentd` logging driver to add these key-v
 
 The default configuration of Amazon CloudWatch would-
 
-* Create a new log group for each Amazon ECS cluster and Amazon ECS task definition family
-* Create a new log stream for each task container in above generated log group whenever a new task is launched. Each stream will be marked with the task id to which the container belongs.
-* Add additional metadata such as Amazon ECS cluster name, Amazon ECS task ARN, Amazon ECS task container name, Amazon ECS task definition family, and the Amazon ECS task definition revision number in each log entry.
+- Create a new log group for each Amazon ECS cluster and Amazon ECS task definition family
+- Create a new log stream for each task container in above generated log group whenever a new task is launched. Each stream will be marked with the task id to which the container belongs.
+- Add additional metadata such as Amazon ECS cluster name, Amazon ECS task ARN, Amazon ECS task container name, Amazon ECS task definition family, and the Amazon ECS task definition revision number in each log entry.
 
 For example, if you have the following task definitions with the containers as:
+
 ```
 ecs_task_1 -> container_1 and container_2
 ecs_task_2 -> container_3

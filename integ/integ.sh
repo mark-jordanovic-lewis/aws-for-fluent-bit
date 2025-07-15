@@ -1,11 +1,18 @@
 #!/bin/bash
 
 set -ex
+access_key=$(cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_access_key_id/ { print $3 }')
+secret_key=$(cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_secret_access_key/ { print $3 }')
+token=$(cat ~/.aws/credentials | awk '/^\[.*\]$/{f=0};/^\[aws-for-fluent-bit-test\]$/{f=1}f;' | awk '/aws_session_token/ { print $3 }')
 
-export AWS_REGION="us-west-2"
+export AWS_REGION="eu-west-2"
 export PROJECT_ROOT="$(pwd)"
 export VOLUME_MOUNT_CONTAINER="/out"
 export ARCHITECTURE=$(uname -m)
+export AWS_SESSION_TOKEN="${token}" 
+export AWS_ACCESS_KEY_ID=${access_key}
+export AWS_SECRET_ACCESS_KEY="${secret_key}" 
+export CW_INTEG_VALIDATOR_IMAGE="flbcwinteg"
 # For arm, uname evaluates to 'aarch64' but everywhere else in the pipline
 # we use 'arm64'
 if [ "$ARCHITECTURE" = "aarch64" ]; then
@@ -25,8 +32,15 @@ test_cloudwatch() {
 	export LOG_GROUP_NAME="fluent-bit-integ-test-${ARCHITECTURE}"
 	# Tag is used to name the log stream; each test run has a unique (random) log stream name
 	export TAG=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 10)
-	docker-compose --file ./integ/test_cloudwatch/docker-compose.test.yml build
-	docker-compose --file ./integ/test_cloudwatch/docker-compose.test.yml up --abort-on-container-exit
+  AWS_SESSION_TOKEN=${token} \
+  AWS_SECRET_ACCESS_KEY=${secret_key} \
+  AWS_ACCESS_KEY_ID=${access_key} \
+	  docker compose --file ./integ/test_cloudwatch/docker-compose.test.yml build
+
+  AWS_SESSION_TOKEN=${token} \
+  AWS_SECRET_ACCESS_KEY=${secret_key} \
+  AWS_ACCESS_KEY_ID=${access_key} \
+    docker compose --file ./integ/test_cloudwatch/docker-compose.test.yml up --abort-on-container-exit \
 	sleep 120
 
 	# Creates a file as a flag for the validation failure
@@ -34,29 +48,36 @@ test_cloudwatch() {
 	touch ./integ/out/cloudwatch-test
 
 	# Validate that log data is present in CW
-	docker-compose --file ./integ/test_cloudwatch/docker-compose.validate.yml build
-	docker-compose --file ./integ/test_cloudwatch/docker-compose.validate.yml up --abort-on-container-exit
+  AWS_SESSION_TOKEN=${token} \
+  AWS_SECRET_ACCESS_KEY=${secret_key} \
+  AWS_ACCESS_KEY_ID=${access_key} \
+    docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml build
+
+  AWS_SESSION_TOKEN=${token} \
+  AWS_SECRET_ACCESS_KEY=${secret_key} \
+  AWS_ACCESS_KEY_ID=${access_key} \
+    docker compose --file ./integ/test_cloudwatch/docker-compose.validate.yml up --abort-on-container-exit
 }
 
 clean_cloudwatch() {
 	export LOG_GROUP_NAME="fluent-bit-integ-test-${ARCHITECTURE}"
 	# Clean up resources that were created in the test
-	docker-compose --file ./integ/test_cloudwatch/docker-compose.clean.yml build
-	docker-compose --file ./integ/test_cloudwatch/docker-compose.clean.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_cloudwatch/docker-compose.clean.yml build
+	docker compose --file ./integ/test_cloudwatch/docker-compose.clean.yml up --abort-on-container-exit
 }
 
 validate_or_clean_s3() {
 	# Validate: validates that appropirate log data is present in the s3 bucket
 	# Clean: deletes all the objects from s3 bucket that were created in the test
 	export S3_ACTION="${1}"
-	docker-compose --file ./integ/test_kinesis/docker-compose.validate-and-clean-s3.yml build
-	docker-compose --file ./integ/test_kinesis/docker-compose.validate-and-clean-s3.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_kinesis/docker-compose.validate-and-clean-s3.yml build
+	docker compose --file ./integ/test_kinesis/docker-compose.validate-and-clean-s3.yml up --abort-on-container-exit
 }
 
 test_kinesis() {
 	# Generates log data which will be stored on the s3 bucket
-	docker-compose --file ./integ/test_kinesis/docker-compose.test.yml build
-	docker-compose --file ./integ/test_kinesis/docker-compose.test.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_kinesis/docker-compose.test.yml build
+	docker compose --file ./integ/test_kinesis/docker-compose.test.yml up --abort-on-container-exit
 
     # Giving a pause before running the validation test
     # Firehose delivery stream has a buffer time which causes the delay to send the data
@@ -77,8 +98,8 @@ test_kinesis() {
 
 test_kinesis_streams() {
 	# Generates log data which will be stored on the s3 bucket
-	docker-compose --file ./integ/test_kinesis/docker-compose.core.test.yml build
-	docker-compose --file ./integ/test_kinesis/docker-compose.core.test.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_kinesis/docker-compose.core.test.yml build
+	docker compose --file ./integ/test_kinesis/docker-compose.core.test.yml up --abort-on-container-exit
 
     # Giving a pause before running the validation test
     # Firehose delivery stream has a buffer time which causes the delay to send the data
@@ -99,8 +120,8 @@ test_kinesis_streams() {
 
 test_firehose() {
 	# Generates log data which will be stored on the s3 bucket
-	docker-compose --file ./integ/test_firehose/docker-compose.test.yml build
-	docker-compose --file ./integ/test_firehose/docker-compose.test.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_firehose/docker-compose.test.yml build
+	docker compose --file ./integ/test_firehose/docker-compose.test.yml up --abort-on-container-exit
 
     # Giving a pause before running the validation test
     # Firehose delivery stream has a buffer time which causes the delay to send the data
@@ -121,8 +142,8 @@ test_firehose() {
 
 test_kinesis_firehose() {
 	# Generates log data which will be stored on the s3 bucket
-	docker-compose --file ./integ/test_firehose/docker-compose.core.test.yml build
-	docker-compose --file ./integ/test_firehose/docker-compose.core.test.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_firehose/docker-compose.core.test.yml build
+	docker compose --file ./integ/test_firehose/docker-compose.core.test.yml up --abort-on-container-exit
 
     # Giving a pause before running the validation test
     # Firehose delivery stream has a buffer time which causes the delay to send the data
@@ -148,8 +169,8 @@ test_s3() {
 	# Tag is used in the s3 keys; each test run has a unique (random) tag
 	export TAG=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 10)
 	# Generates log data which will be stored on the s3 bucket
-	docker-compose --file ./integ/test_s3/docker-compose.test.yml build
-	docker-compose --file ./integ/test_s3/docker-compose.test.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_s3/docker-compose.test.yml build
+	docker compose --file ./integ/test_s3/docker-compose.test.yml up --abort-on-container-exit
 
     # Giving a pause before running the validation test
 	sleep 20
@@ -159,8 +180,8 @@ test_s3() {
 	touch ./integ/out/s3-test
 
 	export S3_ACTION="validate"
-	docker-compose --file ./integ/test_s3/docker-compose.validate-s3-multipart.yml build
-	docker-compose --file ./integ/test_s3/docker-compose.validate-s3-multipart.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_s3/docker-compose.validate-s3-multipart.yml build
+	docker compose --file ./integ/test_s3/docker-compose.validate-s3-multipart.yml up --abort-on-container-exit
 
 	if [ -f ./integ/out/s3-test ]; then
 		# if the file still exists, test failed
@@ -173,8 +194,8 @@ test_s3() {
 	touch ./integ/out/s3-test
 
 	export S3_ACTION="validate"
-	docker-compose --file ./integ/test_s3/docker-compose.validate-s3-putobject.yml build
-	docker-compose --file ./integ/test_s3/docker-compose.validate-s3-putobject.yml up --abort-on-container-exit
+	docker compose --file ./integ/test_s3/docker-compose.validate-s3-putobject.yml build
+	docker compose --file ./integ/test_s3/docker-compose.validate-s3-putobject.yml up --abort-on-container-exit
 
 	if [ -f ./integ/out/s3-test ]; then
 		# if the file still exists, test failed

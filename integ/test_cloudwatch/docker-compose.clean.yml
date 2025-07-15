@@ -1,5 +1,3 @@
-version: "2"
-
 services:
     clean-cw:
         build: ${PROJECT_ROOT}/integ/clean_cloudwatch
